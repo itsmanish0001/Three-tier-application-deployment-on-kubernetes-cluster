@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: three-tier-backend-deployment
+  namespace: three-tier
+  labels:
+    app: three-tier-backend
+spec:
+  replicas: 3
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 25%
+  selector:
+    matchLabels:
+      app: three-tier-backend
+  template:
+    metadata:
+      labels:
+        app: three-tier-backend
+    spec:
+      containers:
+        - name: three-tier-backend
+          image: manish248/three-tier-backend:01
+          ports:
+            - containerPort: 4000  # Port the application listens on
+          env:
+            - name: MONGO_URI
+              value: "mongodb://mongodb-svc:27017/three-tier"  # MongoDB service and database name
+            - name: PORT
+              value: "4000"  # Application port
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: three-tier-backend-service
+  namespace: three-tier
+  labels:
+    app: three-tier-backend
+spec:
+  type: LoadBalancer
+  selector:
+    app: three-tier-backend
+  ports:
+    - protocol: TCP
+      port: 80         # Service exposed within the cluster
+      targetPort: 4000 # Routes traffic to port 4000 on the container
